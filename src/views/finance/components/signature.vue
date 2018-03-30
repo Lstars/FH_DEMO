@@ -164,11 +164,10 @@ export default {
   },
   created() {
     this.layer_showInfo = this.isShow;
-    this.
   },
   methods: {
     handleSaveData() {
-
+      console.log(1)
     },
     dialogClose() {
       this.$emit('closeOverlay')
