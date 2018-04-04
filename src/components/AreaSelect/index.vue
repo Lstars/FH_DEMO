@@ -1,6 +1,6 @@
 <template>
   <div>
-    <el-cascader :placeholder="placeholder" :disabled="disabled" :options="options" :size="size" :clearable="clearable" :filterable="filterable" v-model="selectedOptions" @change="handleChange" style="width:100%">
+    <el-cascader :placeholder="placeholder" :disabled="disabled" :options="options" :size="size" :clearable="clearable" :props="props" :filterable="filterable" v-model="selectedOptions" @change="handleChange" style="width:100%">
     </el-cascader>
   </div>
 </template>
@@ -24,13 +24,19 @@ export default {
       type: Boolean,
       default: true
     },
+    props: {
+      default: {
+        value: 'value',
+        children: 'children'
+      }
+    },
     disabled: {
       type: Boolean,
       default: false
     },
     level: {
       type: Number,
-      default: 0, // 0->二联 1->三联 
+      default: 0, // 0->二联 1->三联
       validator: (val) => [0, 1].indexOf(val) > -1
     },
     size: {
@@ -47,6 +53,7 @@ export default {
   },
   methods: {
     handleChange(selected) {
+      console.log(selected)
       this.$emit('input', selected);
     }
   },

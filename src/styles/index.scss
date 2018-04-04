@@ -170,9 +170,15 @@ a:hover {
 .list-group-item i {
   cursor: pointer;
 }
-
-
-
+.left10 {
+  margin-left: 10px;
+}
+.border {
+  border: 1px solid #ccc;
+}
+.hideUpload .el-upload--picture-card {
+  display:none;
+}
 /* elementUI 修改 */
 
 .el-form-item--small.el-form-item {

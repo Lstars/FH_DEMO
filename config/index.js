@@ -8,16 +8,16 @@ module.exports = {
     assetsSubDirectory: 'static',
     assetsPublicPath: '/',
     proxyTable: {
-      '/api': {
+      '/qft-api/ota': {
         target: proxyIPs.WANLI,
         changeOrigin: true,
         pathRewrite: {
-          '^/api': ''
+          '^/qft-api/ota': ''
         }
       }
     },
     host: 'localhost',
-    port: 9528,
+    port: 9529,
     autoOpenBrowser: true,
     errorOverlay: true,
     notifyOnErrors: false,

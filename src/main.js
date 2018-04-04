@@ -29,42 +29,38 @@ Object.keys(filters).forEach(key => {
 });
 
 const whiteList = ['/login'];
-router.beforeEach((to, from, next) => {
-  NProgress.start();
-  if (getSessionId()) {
-    if (to.path === '/login') {
-      next({ path: '/' });
-    } else {
-      if (store.getters.roles.length === 0) {
+// router.beforeEach((to, from, next) => {
+//   NProgress.start();
+  // if (getSessionId()) {
+  //   if (to.path === '/login') {
+  //     next({ path: '/' });
+  //   } else {
+  //     if (store.getters.roles.length === 0) {
         store.dispatch('GetInfo').then(res => {
-          const rolesMap = {
-            '1': 'admin',
-            '99': 'service',
-            '0': 'global'
-          }
-          const roles = [(rolesMap[res.data.isAdmin.toString()] || 'global')];
+
+          const roles = 'admin'
           store.dispatch('GenerateRoutes', { roles }).then(() => {
             router.addRoutes(store.getters.addRouters);
-            next({ ...to });
+            // next({ ...to });
           })
         })
-      } else {
-        next();
-      }
-    }
-  } else {
-    if (whiteList.indexOf(to.path) !== -1) {
-      next()
-    } else {
-      next('/login');
-      NProgress.done();
-    }
-  }
-});
+  //     } else {
+  //       next();
+  //     }
+  //   }
+  // } else {
+  //   if (whiteList.indexOf(to.path) !== -1) {
+  //     next()
+  //   } else {
+  //     next('/login');
+  //     NProgress.done();
+  //   }
+  // }
+// });
 
-router.afterEach(() => {
-  NProgress.done();
-});
+// router.afterEach(() => {
+//   NProgress.done();
+// });
 
 new Vue({
   el: '#app',

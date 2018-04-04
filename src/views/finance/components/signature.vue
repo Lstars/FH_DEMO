@@ -1,43 +1,50 @@
 <template>
 	<div>
 	  <el-dialog title="电子签章" :visible.sync="layer_showInfo" width="840px" @close="dialogClose">
-	    <el-form :model="ruleForm" status-icon :rules="rules" ref="ruleForm" label-width="140px" size="small">
+	    <el-form :model="ruleForm" status-icon ref="ruleForm" label-width="140px" size="small">
 	      <div class="clearfix">
 	        <el-col :span="12">
-            <el-form-item :label="layerType == 1 ? '实名认证' : '企业名称'" >
+            <el-form-item v-if="layerType == 1" label="实名认证" >
               <el-input
               v-model="ruleForm.name"
               disabled
               ></el-input>
             </el-form-item>
+            <el-form-item v-if="layerType == 2" label="企业名称" >
+              <el-input
+              v-model="ruleForm.company"
+              disabled
+              ></el-input>
+            </el-form-item>
 	        </el-col>
 	        <el-col :span="12">
-            <el-form-item label="合同联系电话" prop="mobile">
-              <el-input v-model.trim="ruleForm.mobile"></el-input>
+            <el-form-item label="合同联系电话">
+              <el-input v-model.trim="ruleForm.mobile" disabled></el-input>
             </el-form-item>
 	        </el-col>
 	      </div>
-	      <div class="clearfix">
+
+	      <div class="clearfix" v-if="layerType == 2">
 	        <el-col :span="12">
-	            <el-form-item label="社会统一信用代码" prop="name" >
+	            <el-form-item label="社会统一信用代码" disabled>
 	                <el-input
-	                v-model.trim="ruleForm.name"
+	                v-model.trim="ruleForm.companyNo"
 	                ></el-input>
 	            </el-form-item>
 	        </el-col>
 	        <el-col :span="12">
-	            <el-form-item label="法人身份证" prop="mobile">
-	                <el-input v-model.trim="ruleForm.mobile"></el-input>
+	            <el-form-item label="法人身份证">
+	                <el-input v-model.trim="ruleForm.cardNo" disabled></el-input>
 	            </el-form-item>
 	        </el-col>
 	      </div>
 	      <div class="clearfix">
-	        <el-form-item label="您的电子签名" >
+	        <el-form-item :label="layerType == 1 ? '您的电子签名' : '企业电子签名'" >
 	            <el-button type="info" size="mini">未使用</el-button>
 	        </el-form-item>
 	      </div>
-	      <div :class="{clearfix: true}">
-	        <el-form-item label="营业执照">
+	      <div :class="{clearfix: true,hideUpload: isHideUpload}">
+	        <el-form-item>
 	          <el-upload
 	            :action="`${actionBaseUrl}/util/upload/uploadPicture`"
 	            :before-upload="pictureUpload"
@@ -47,7 +54,7 @@
 	            :on-success="pictureSuccess"
 	            :file-list="fileList"
 	            :on-remove="pictureRemove"
-	            multiple
+              :limit="1"
 	            accept="image/jpg,image/jpeg,image/png"
 	            list-type="picture-card">
 	            <i class="el-icon-plus"></i>
@@ -60,7 +67,7 @@
 	      	我已阅读并同意</el-checkbox>
 	      	<span class="attorney" @click="lookAttorney">《电子签章授权委托书》</span>并生成电子签名/签章用于签署在线房租合同、分期协议
 	      </div>
-	      <!-- <vue-qr text="http://www.baidu.com?112" height="200" width="200"></vue-qr> -->
+
 	    </el-form>
 	    <div slot="footer" class="dialog-footer">
 	    	<el-button type="primary" size="small" @click="handleSaveData">确 定</el-button>
@@ -107,12 +114,14 @@
 	      <el-button @click="layer_attorney = false" size="small">取 消</el-button>
 	    </div>
     </el-dialog>
+
 	</div>
 </template>
 
 <script>
 import { validateMobile } from '@/utils/validate'
-import VueQr from 'vue-qr'
+import { plusXing,deepClone } from '@/utils'
+import { otherInfoApi } from '@/api/applyFinance'
 export default {
   name: 'signature',
   props: {
@@ -123,9 +132,16 @@ export default {
     isShow: {
       type: Boolean,
       default: false,
+    },
+    nowFinance: {
+      default: {}
     }
   },
-  components: {VueQr},
+  filters:{
+    xing(val){
+
+    }
+  },
   data() {
     const validatePhone = (rule, value, callback) => {
       if (!validateMobile(value)) {
@@ -135,20 +151,15 @@ export default {
       }
     };
     return {
-      rules: {
-        name: [
-          { required: true, message: '请输入姓名', trigger: 'blur' }
-        ],
-        mobile: [
-          { validator: validatePhone, required: true,trigger: 'blur' }
-        ]
-
-      },
-      actionBaseUrl: process.env.BASE_API,
+      actionBaseUrl: 'https://dev.mdguanjia.com/bop',
       ruleForm: {
         mobile: '',
         name: '',
-        checked: false
+        accountName: '',
+        cardNo: '',
+        company: '',
+        companyNo: '',
+        checked: true
       },
       attorneyData: {
       	name: '杭州麦家公寓',
@@ -156,21 +167,36 @@ export default {
       	onlineContractIneffectiveDateStr: '2019/03/12',
       	onlineContractEffectiveDateStr: '2018/03/12'
       },
+      codeUrl:'',
       layerType: 1,
+      isHideUpload: false,
       fileList: [],
       layer_showInfo: false,
-      layer_attorney: false
+      layer_attorney: false,
+      layer_sign: false
     }
   },
-  created() {
+  mounted() {
     this.layer_showInfo = this.isShow;
   },
   methods: {
     handleSaveData() {
-      console.log(1)
+      let param = {
+        signInfo: {
+          signPicUrl: this.fileList[0].url
+        },
+        phoneNo: this.ruleForm.mobile,
+        uuid: this.ruleForm.accountName
+      }
+      otherInfoApi(param).then(response => {
+        this.$message.success('电子签章保存成功');
+      }).catch(response => {
+
+      })
     },
     dialogClose() {
       this.$emit('closeOverlay')
+      this.fileList = [];
     },
     /* 上传图片 */
     pictureUpload(file){
@@ -199,7 +225,7 @@ export default {
         }
         imgList.push(key);
       })
-      this.stepForm1.picList = deepClone(imgList);
+      this.fileList = deepClone(imgList);
 
     },
     picturePreview(file) {
@@ -207,10 +233,10 @@ export default {
       this.layer_showImage = true;
 	  },
     pictureSuccess(response, file, fileList){
-      if (fileList.length >= 10) {
+      if (fileList.length >= 1) {
         this.isHideUpload = true;
       }
-      this.stepForm1.picList.push({'url':file.response.data[0]})
+      this.fileList.push({'url':file.response.data[0]})
     },
     pictureError(err,file){
       file = null;
@@ -228,6 +254,9 @@ export default {
   watch: {
     isShow(val) {
       this.layer_showInfo = val;
+    },
+    nowFinance(val) {
+      this.ruleForm = Object.assign(this.ruleForm,val);
     }
   }
 }
@@ -250,4 +279,26 @@ export default {
 		font-size: 20px;
 		margin: 0;
 	}
+  .codeTips {
+    padding:10px 0;
+  }
+  .qrcode {
+    background-color: #fbfdff;
+    border: 1px dashed #c0ccda;
+    border-radius: 6px;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+    width: 148px;
+    height: 148px;
+    cursor: pointer;
+    line-height: 146px;
+    vertical-align: top;
+    text-align: center;
+    i{
+      font-size: 30px;
+    }
+  }
+  .codeText {
+    padding-top: 10px;
+  }
 </style>

@@ -35,14 +35,25 @@ const user = {
     Login({ commit }, userInfo) {
       const mobile = userInfo.mobile.trim();
       return new Promise((resolve, reject) => {
-        login(mobile, userInfo.password).then(response => {
-          const data = response.data;
-          setSessionId(data.sessionId);
-          commit('SET_SESSIONID', data.sessionId);
-          resolve();
-        }).catch(error => {
-          reject(error);
-        });
+        // login(mobile, userInfo.password).then(response => {
+        //   const data = response.data;
+        //   setSessionId(data.sessionId);
+        //   commit('SET_SESSIONID', data.sessionId);
+        //   resolve();
+        // }).catch(error => {
+        //   reject(error);
+        // });
+        localStorage.setItem('userId', mobile);//存储手机号为ID
+        // 查询当前号码是否注册过账号 有的话将accountName存储起来
+        let financeUser = JSON.parse(localStorage.getItem('financeUser')) || [];
+        let accountName = null;
+        financeUser.map(val => {
+          if (val.userId == mobile) {
+            accountName = val.accountName;
+          }
+        })
+        localStorage.setItem('accountName', mobile);
+        resolve();
       });
     },
 
@@ -50,15 +61,10 @@ const user = {
     // 获取用户信息
     GetInfo({ commit, state }) {
       return new Promise((resolve, reject) => {
-        getInfo(state.sessionId).then(response => {
-          const data = response.data;
-          commit('SET_ROLES', data.isAdmin);
-          commit('SET_NAME', data.name);
-          commit('SET_AVATAR', data.picUrl || defaultAvatar);
-          resolve(response);
-        }).catch(error => {
-          reject(error);
-        });
+        commit('SET_ROLES', 'admin');
+        commit('SET_NAME', '测试用户');
+        commit('SET_AVATAR', defaultAvatar);
+        resolve();
       });
     },
 

@@ -49,10 +49,10 @@ export default {
       },
       loginRules: {
         mobile: [
-          { required: true, trigger: 'blur', validator: validatePhone }
+          { required: true, trigger: 'blur' }
         ],
         password: [
-          { required: true, trigger: 'blur', validator: validatePass }
+          { required: true, trigger: 'blur' }
         ]
       },
       loading: false
@@ -60,20 +60,24 @@ export default {
   },
   methods: {
     handleLogin() {
-      this.$refs.loginForm.validate(valid => {
-        if (valid) {
-          this.loading = true;
-          this.$store.dispatch('Login', this.loginForm).then(() => {
-            this.loading = false;
-            this.$router.push({ path: '/' });
-          }).catch(() => {
-            this.loading = false;
-          });
-        } else {
-          console.log('error submit!!');
-          return false;
-        }
+      this.$store.dispatch('Login', this.loginForm).then(() => {
+        this.$router.push({ path: '/finance/applyFinance' });
+      }).catch(() => {
       });
+      // this.$refs.loginForm.validate(valid => {
+      //   if (valid) {
+      //     this.loading = true;
+      //     this.$store.dispatch('Login', this.loginForm).then(() => {
+      //       this.loading = false;
+      //       this.$router.push({ path: '/' });
+      //     }).catch(() => {
+      //       this.loading = false;
+      //     });
+      //   } else {
+      //     console.log('error submit!!');
+      //     return false;
+      //   }
+      // });
     }
   }
 }

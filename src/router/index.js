@@ -25,7 +25,19 @@ export const constantRouterMap = [
     name: 'Home',
     hidden: true,
     children: [{ path: 'dashboard', component: _import('dashboard/index') }]
-  }
+  },
+  {
+    path: '/finance',
+    component: Layout,
+    redirect: 'noredirect',
+    name: '磐谷金融',
+    icon: 'finance',
+    children: [
+      { path: 'applyFinance', component: _import('finance/applyFinance'), name: '申请金融' },
+      { path: 'rentals', component: _import('finance/rentals'), name: '租务' }
+    ]
+  },
+  { path: '*', redirect: '/404', hidden: true }
 ]
 
 export default new Router({
@@ -35,18 +47,6 @@ export default new Router({
 });
 
 export const asyncRouterMap = [
-    {
-        path: '/finance',
-        component: Layout,
-        redirect: 'noredirect',
-        name: '磐谷金融',
-        icon: 'finance',
-        meta: { role: ['admin', 'global'] },
-        children: [
-            { path: 'applyFinance', component: _import('finance/applyFinance'), name: '申请金融' },
-            { path: 'rentals', component: _import('finance/rentals'), name: '租务' }
-        ]
-    },
-    { path: '*', redirect: '/404', hidden: true }
+
 
 ];

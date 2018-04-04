@@ -17,14 +17,14 @@
             <i class="el-icon-caret-bottom"></i>
           </div>
           <el-dropdown-menu class="user-dropdown" slot="dropdown">
-            <el-dropdown-item>
+            <!-- <el-dropdown-item>
               <span @click="layer_showUserInfo = true" style="display:block;">个人信息</span>
             </el-dropdown-item>
             <router-link class='inlineBlock' to="/">
               <el-dropdown-item>
                 首页
               </el-dropdown-item>
-            </router-link>
+            </router-link> -->
             <el-dropdown-item divided>
               <span @click="logout" style="display:block;">退出</span>
             </el-dropdown-item>
@@ -55,7 +55,6 @@ import Levelbar from './Levelbar';
 import Hamburger from '@/components/Hamburger';
 import ThemePicker from '@/components/ThemePicker'
 import Screenfull from '@/components/Screenfull'
-import { saveSelfDetailApi } from '@/api/userManage'
 import { ObjectMap } from '@/utils'
 
 export default {
@@ -111,24 +110,25 @@ export default {
       this.$store.dispatch('ToggleSideBar')
     },
     logout() {
-      this.$store.dispatch('LogOut').then(() => {
-        location.reload(); // 为了重新实例化vue-router对象 避免bug
+      this.$store.dispatch('FedLogOut').then(() => {
+        this.$router.push({ path: '/login' });
+        // location.reload(); // 为了重新实例化vue-router对象 避免bug
       });
     },
     handelSaveUserInfo() {
-      this.$refs.ruleForm.validate(valid => {
-        if (valid) {
-          saveSelfDetailApi(ObjectMap(this.ruleForm)).then(response => {
-            this.layer_showUserInfo = false;
-            this.$store.dispatch('LogOut').then(() => {
-              location.reload(); // 为了重新实例化vue-router对象 避免bug
-            });
-          });
-        } else {
-          console.log('error submit!!');
-          return false;
-        }
-      })
+      // this.$refs.ruleForm.validate(valid => {
+      //   if (valid) {
+      //     saveSelfDetailApi(ObjectMap(this.ruleForm)).then(response => {
+      //       this.layer_showUserInfo = false;
+      //       this.$store.dispatch('LogOut').then(() => {
+      //         location.reload(); // 为了重新实例化vue-router对象 避免bug
+      //       });
+      //     });
+      //   } else {
+      //     console.log('error submit!!');
+      //     return false;
+      //   }
+      // })
     },
     dialogClose() {
       this.$refs.ruleForm.resetFields();

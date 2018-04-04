@@ -1,29 +1,9 @@
 <template>
   <div class="app-container">
     <div class="model-search clearfix">
-      <el-radio-group v-model="formData.houseType" size="small" @change="changeType">
-        <el-radio-button label="1">分散式</el-radio-button>
-        <el-radio-button label="2">集中式</el-radio-button>
-      </el-radio-group>
-      <el-select size="small" v-model="formData.type"
-          placeholder="全部房源" class="item-select"
-          style="width: 150px;"
-          @change="searchParam"
-          >
-          <el-option
-              v-for="item in selectOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value">
-          </el-option>
-      </el-select>
-      <el-input size="small" v-model.trim="formData.searchField" placeholder="公寓/小区名称" class="filter-item"
-          style="width:180px;"
-          @keydown.native.enter="searchParam">
-      </el-input>
-      <el-button type="primary" size="small" icon="el-icon-search" @click.native="searchParam" v-waves class="filter-item">查询</el-button>
-      <el-button plain size="small" icon="el-icon-remove-outline" @click.native="clearForm">清空</el-button>
-      <el-button class="right" type="primary" size="small" icon="el-icon-circle-plus-outline" @click.native="handleApply">成为金融用户</el-button>
+      <el-button class="right left10" type="primary" size="small" v-if="isFinance" @click.native="layer_addHouse = true">录入房源并申请</el-button>
+      <el-button class="right" type="primary" size="small" v-if="isFinance" @click.native="layer_signature = true">电子签章</el-button>
+      <el-button class="right" type="primary" size="small" v-if="!isFinance" @click.native="handleApply">成为金融用户</el-button>
     </div>
     <div class="model-table" :style="tableStyle">
         <el-table
@@ -52,47 +32,29 @@
                     </span>
                 </template>
             </el-table-column>
-            <el-table-column label="操作" width="220">
-                <template slot-scope="scope">
-                    <el-button type="primary" icon="el-icon-edit" size="small" @click.native="editData(scope.$index,scope.row)">编辑</el-button>
-                    <el-button type="danger" icon="el-icon-delete" size="small" @click.native="delData(scope.$index,scope.row)">删除</el-button>
-                </template>
-            </el-table-column>
         </el-table>
-    </div>
-    <div class="model-pagination">
-        <el-pagination
-            background
-            @size-change="handleSizeChange"
-            @current-change="handleCurrentChange"
-            :current-page.sync="pageItems.pageNo"
-            :page-sizes="pageSizeList"
-            :page-size="pageItems.pageSize"
-            layout="total, sizes, prev, pager, next, jumper"
-            :total="total">
-        </el-pagination>
     </div>
 
     <!-- 成为金融用户 -->
     <div class="dialog-info">
-      <el-dialog title="注册磐谷金融" :visible.sync="layer_showInfo" width="600px" @close="dialogClose">
+      <el-dialog title="注册磐谷金融" :visible.sync="layer_showInfo" width="500px" @close="dialogClose">
         <el-form :model="ruleForm" status-icon :rules="rules" ref="ruleForm" label-width="140px" size="small">
           <el-form-item label-width="20px">
             <el-radio-group v-model="ruleForm.radio" size="small">
-              <el-radio-button label="1">个人用户</el-radio-button>
-              <el-radio-button label="2">企业用户</el-radio-button>
+              <el-radio-button label="2">个人用户</el-radio-button>
+              <el-radio-button label="1">企业用户</el-radio-button>
             </el-radio-group>
           </el-form-item>
           <el-form-item label="手机号码" prop="mobile">
             <el-input v-model.number="ruleForm.mobile"></el-input>
           </el-form-item>
-          <el-form-item :label="ruleForm.radio == 1 ? '姓名' : '法人姓名'" prop="name">
+          <el-form-item :label="ruleForm.radio == 2 ? '姓名' : '法人姓名'" prop="name">
             <el-input v-model="ruleForm.name"></el-input>
           </el-form-item>
-          <el-form-item :label="ruleForm.radio == 1 ? '身份证' : '法人身份证'" prop="cardNo">
+          <el-form-item :label="ruleForm.radio == 2 ? '身份证' : '法人身份证'" prop="cardNo">
             <el-input v-model="ruleForm.cardNo"></el-input>
           </el-form-item>
-          <div class="clearfix" v-if="ruleForm.radio == 2">
+          <div class="clearfix" v-if="ruleForm.radio == 1">
             <el-form-item label="企业名称" prop="company">
               <el-input v-model="ruleForm.company"></el-input>
             </el-form-item>
@@ -106,15 +68,19 @@
 
         </el-form>
         <div slot="footer" class="dialog-footer">
-          <el-button @click="layer_showInfo = false" size="small">取 消</el-button>
           <el-button type="primary" size="small" @click="handleSaveData">确定绑定并注册</el-button>
+          <el-button @click="layer_showInfo = false" size="small">取 消</el-button>
         </div>
       </el-dialog>
     </div>
 
     <!-- 电子签章 -->
     <div class="dialog-info">
-      <signature :isShow="layer_showInfo2" @closeOverlay="closeOverlay"></signature>
+      <signature :isShow="layer_signature" :nowFinance="nowFinance" @closeOverlay="layer_signature = false"></signature>
+    </div>
+    <!-- 录入房源 -->
+    <div class="dialog-info">
+      <add-house :isShow="layer_addHouse" :uuid="accountName" @addTable="addTable" @closeOverlay="layer_addHouse = false"></add-house>
     </div>
   </div>
 
@@ -124,12 +90,15 @@
 import waves from '@/directive/waves' // 水波纹指令
 import { validateMobile } from '@/utils/validate'
 import signature from './components/signature'
+import addHouse from './components/addHouse'
+import { ObjectMap } from '@/utils'
+import { addAccountApi } from '@/api/applyFinance'
 export default {
   name: 'applyFinance',
   directives: {
       waves
   },
-  components: { signature },
+  components: { signature,addHouse },
   data() {
     const validatePhone = (rule, value, callback) => {
       if (!validateMobile(value)) {
@@ -160,9 +129,11 @@ export default {
         ]
 
       },
-      selectOptions: [
-        {label: '全部房源', value: 1},
-      ],
+      userId: localStorage.getItem('userId'),
+      accountName: null,
+      financeUser: [],//已申请的用户数组
+      nowFinance: {},
+      isFinance:false,//是否已申请为金融用户
       formData: {
         type: '',
         houseType: 1,
@@ -179,20 +150,16 @@ export default {
       },
       listLoading: false,
       colModels:[
-        { prop:'organizationName', label: '房源位置'},
-        { prop:'displayName', label: '房源信息'},
-        { prop:'status', label: '状态', type:'status', width:80}
+        { prop:'houseAddress', label: '房源位置'},
+        { prop:'houseInfo', label: '房源信息'},
+        { prop:'rentType', label: '出租方式'},
+        { prop:'status', label: '状态'}
       ],
       tableHeight: 300,
       tableData: [],
-      total: null,
-      pageItems: {
-        pageNo: 1,
-        pageSize: 20
-      },
-      pageSizeList: [10, 20, 30, 50],
       layer_showInfo: false,
-      layer_showInfo2: true,
+      layer_signature: false,
+      layer_addHouse: false,
       houseType: 1,//分散式1 集中式2
     }
   },
@@ -206,6 +173,16 @@ export default {
         this.tableHeight = this.tableHeight = temp_height > 300 ? temp_height : 300;
       })()
     }
+    this.tableData = JSON.parse(localStorage.getItem(this.userId)) || [];
+    this.financeUser = JSON.parse(localStorage.getItem('financeUser')) || [];
+    let accountName = null;
+    this.financeUser.map(val => {
+      if (val.userId == this.userId) {
+        this.isFinance = true;
+        this.accountName = val.accountName;
+        this.nowFinance = val;
+      }
+    })
   },
   computed: {
     tableStyle: function() {
@@ -216,15 +193,12 @@ export default {
     }
   },
   methods: {
-    searchParam() {
-
-    },
-    clearForm() {
-
-    },
     handleApply() {
-      this.layer_showInfo2 = true;
-      console.log(this.layer_showInfo2)
+      this.layer_showInfo = true;
+    },
+    addTable(val) {//数组添加房源
+      this.tableData.push(val);
+      this.layer_addHouse = false;
     },
     dialogClose() {
       this.layer_showInfo = false;
@@ -241,24 +215,50 @@ export default {
     handleSaveData() {
       this.$refs.ruleForm.validate((valid) => {
         if (valid) {
-          console.log(this.ruleForm)
+          let param = {
+            basicInfo: {//组织基本信息 个人也要组织 莫名其妙
+              organizationName: this.ruleForm.company || this.ruleForm.name,
+              orgLicence: this.ruleForm.companyNo || this.ruleForm.name,
+              type: this.ruleForm.radio,
+              orgLegalPersonName: this.ruleForm.name,
+              orgLegalPersonCardNo: this.ruleForm.cardNo,
+              orgAddrDetail: this.ruleForm.address
+            },
+            userInfo: {//用户基本信息
+              name: this.ruleForm.name,
+              cardType: 1,
+              cardNo: this.ruleForm.cardNo,
+              mobile: this.ruleForm.mobile
+            }
+          }
+
+          addAccountApi(ObjectMap(param)).then(response => {
+            let userData = {
+              accountName: response.data.uuid,
+              userId: this.userId,
+              name: this.ruleForm.name,
+              cardNo: this.ruleForm.cardNo,
+              mobile: this.ruleForm.mobile,
+              company: this.ruleForm.company,
+              companyNo: this.ruleForm.companyNo
+            }
+            this.financeUser.push(userData);
+            this.isFinance = true;
+            localStorage.setItem('financeUser',JSON.stringify(this.financeUser));
+            this.layer_showInfo = false;
+          }).catch(response => {
+
+          })
+
         } else {
           return false;
         }
       });
-    },
-    handleSizeChange(val) {
-      this.pageItems.pageSize = val;
-      this.getGridData(this.pageItems);
-    },
-    handleCurrentChange(val) {
-      this.pageItems.pageNo = val;
-      this.getGridData(this.pageItems);
-    },
-    changeType() {
-    },
-    closeOverlay() {
-      this.layer_showInfo2 = false;
+    }
+  },
+  watch:{
+    tableData (val){//监测表格数据 如果增加了修改缓存数据
+      localStorage.setItem(this.userId, JSON.stringify(val));
     }
   }
 }
