@@ -247,7 +247,7 @@
         </div>
       </el-dialog>
     </div>
-    <intelligentDevice v-if="isShowIntelligentDevice"></intelligentDevice>
+    <intelligentDevice ref="dialog"></intelligentDevice>
   </div>
 
 </template>
@@ -427,7 +427,7 @@ export default {
   },
   methods: {
     delData () {
-      this.isShowIntelligentDevice = true
+      this.$refs.dialog.dialogVisible = true
     },
     searchRoom() {
       this.$prompt('请输入房源编码', '提示', {

@@ -29,7 +29,7 @@
     },
     data() {
       return {
-        dialogVisible: true,
+        dialogVisible: false,
         tabMapOptions: ['开门记录', '权限管理'],
         activeName: '开门记录',
         pageItems: {
