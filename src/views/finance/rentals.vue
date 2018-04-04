@@ -495,9 +495,6 @@ export default {
     },
     closeOverlay() {
       this.layer_showInfo2 = false;
-    },
-    realName() {
-      this.isReal = true;
     }
   }
 }
