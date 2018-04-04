@@ -247,7 +247,7 @@
         </div>
       </el-dialog>
     </div>
-
+    <intelligentDevice v-if="isShowIntelligentDevice"></intelligentDevice>
   </div>
 
 </template>
@@ -257,10 +257,14 @@ import waves from '@/directive/waves' // 水波纹指令
 import { validateMobile } from '@/utils/validate'
 import { ObjectMap,deepClone } from '@/utils'
 import { houseStateApi,createOrderApi } from '@/api/rentals'
+const intelligentDevice = () => import('./components/intelligentDevice')
 export default {
   name: 'rentals',
   directives: {
       waves
+  },
+  components: {
+    intelligentDevice
   },
   filters: {
     statusFilter(status) {
@@ -291,6 +295,7 @@ export default {
       }
     };
     return {
+      isShowIntelligentDevice: false,
       rules: {
         rentFee: [
           { required: true, message: '请输入房价', trigger: 'blur' }
@@ -421,6 +426,9 @@ export default {
     }
   },
   methods: {
+    delData () {
+      this.isShowIntelligentDevice = true
+    },
     searchRoom() {
       this.$prompt('请输入房源编码', '提示', {
         confirmButtonText: '确定',
