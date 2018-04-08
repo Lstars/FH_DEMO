@@ -204,3 +204,7 @@ a:hover {
   fill: currentColor;
   overflow: hidden;
 }
+.dialog-image .el-dialog{
+  background: inherit;
+  box-shadow: none;
+}

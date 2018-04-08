@@ -70,9 +70,8 @@
 
 	    </el-form>
 	    <div slot="footer" class="dialog-footer">
+        <el-button @click="layer_showInfo = false" size="small">取 消</el-button>
 	    	<el-button type="primary" size="small" @click="handleSaveData">确 定</el-button>
-	      <el-button @click="layer_showInfo = false" size="small">取 消</el-button>
-
 	    </div>
 	  </el-dialog>
 
@@ -110,8 +109,8 @@
 	      </p>
     	</div>
     	<div slot="footer" class="dialog-footer">
+        <el-button @click="layer_attorney = false" size="small">取 消</el-button>
     		<el-button type="primary" size="small" @click="layer_attorney = false;ruleForm.checked = true">我已阅读并同意</el-button>
-	      <el-button @click="layer_attorney = false" size="small">取 消</el-button>
 	    </div>
     </el-dialog>
 

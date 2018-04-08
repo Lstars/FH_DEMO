@@ -68,8 +68,8 @@
 
         </el-form>
         <div slot="footer" class="dialog-footer">
-          <el-button type="primary" size="small" @click="handleSaveData">确定绑定并注册</el-button>
           <el-button @click="layer_showInfo = false" size="small">取 消</el-button>
+          <el-button type="primary" size="small" @click="handleSaveData">确定绑定并注册</el-button>
         </div>
       </el-dialog>
     </div>

@@ -1,18 +1,18 @@
 let path = require('path')
 let proxyIPs = {
-  WANLI: 'http://192.168.1.121:1234/', // 万里小哥哥
-  HONGDENG: 'http://192.168.5.241:1234/' // 水滴灯小哥哥
+  WANLI: 'http://192.168.5.172:8500/', // 万里小哥哥
+  HONGDENG: 'http://192.168.5.241:8500/' // 水滴灯小哥哥
 }
 module.exports = {
   dev: {
     assetsSubDirectory: 'static',
     assetsPublicPath: '/',
     proxyTable: {
-      '/qft-api/ota': {
-        target: proxyIPs.WANLI,
+      '/api': {
+        target: proxyIPs.HONGDENG,
         changeOrigin: true,
         pathRewrite: {
-          '^/qft-api/ota': ''
+          '^/api': ''
         }
       }
     },

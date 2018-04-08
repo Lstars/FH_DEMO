@@ -81,8 +81,8 @@
         </div>
 	    </el-form>
 	    <div slot="footer" class="dialog-footer">
+        <el-button @click="layer_showInfo = false" size="small">取 消</el-button>
 	    	<el-button type="primary" size="small" @click="handleSaveData">确 定</el-button>
-	      <el-button @click="layer_showInfo = false" size="small">取 消</el-button>
 	    </div>
 	  </el-dialog>
 
@@ -237,14 +237,14 @@ export default {
         key.pictureList.map(val => {
           pic.push(val.url)
         });
-        key.pictureList = pic.join(',');
+        key.pictureList = pic;
       })
       addHouseApi(ObjectMap(deepForm)).then(response => {
         //保存数据到离线存储
         this.ruleForm.houseAddress = `${this.ruleForm.zone[0]} ${this.ruleForm.zone[1]} ${this.ruleForm.zone[2]}`;
         this.ruleForm.houseInfo = this.ruleForm.radio == 1
-                                  ? this.ruleForm.estateName
-                                  : `${this.ruleForm.estateName}-${this.ruleForm.floor}`;
+                                  ? this.ruleForm.subdistrictName
+                                  : `${this.ruleForm.subdistrictName}-${this.ruleForm.buildingName}`;
         this.ruleForm.rentType = this.ruleForm.radio == 1
                                 ? '集中式'
                                 : this.ruleForm.radio == 2

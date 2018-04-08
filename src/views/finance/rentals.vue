@@ -29,9 +29,9 @@
             <el-table-column label="操作">
                 <template slot-scope="scope">
                     <el-button type="primary" v-if="scope.row.houseState == 3" size="small" @click.native="orderCreate(scope.row)">租客录入</el-button>
-                    <el-button type="primary" v-if="scope.row.houseState != 3" size="small" @click.native="orderLook(scope.$index,scope.row)">订单信息</el-button>
+                    <el-button type="primary" v-if="scope.row.houseState != 3" size="small" @click.native="orderLook(scope.row)">订单信息</el-button>
                     <el-button type="primary" size="small" @click.native="deviceInfo(scope.$index,scope.row)">智能门锁</el-button>
-                    <el-button type="primary" v-if="scope.row.houseState != 3" size="small" @click.native="checkOut(scope.$index,scope.row)">退房</el-button>
+                    <el-button type="primary" v-if="scope.row.houseState != 3" size="small" @click.native="checkOut(scope.row)">退房</el-button>
                 </template>
             </el-table-column>
         </el-table>
@@ -123,8 +123,8 @@
           <div class="clearfix" style="padding-top: 10px">请引导租客在APP签订合同后再付款</div>
         </el-form>
         <div slot="footer" class="dialog-footer">
-          <el-button type="primary" size="small" @click="handleSaveData">确定</el-button>
           <el-button @click="layer_showInfo = false" size="small">取 消</el-button>
+          <el-button type="primary" size="small" @click="handleSaveData">确定</el-button>
         </div>
       </el-dialog>
     </div>
@@ -145,8 +145,8 @@
             </el-form-item>
          </el-form>
         <div slot="footer" class="dialog-footer">
-          <el-button type="primary" size="small" @click="statusSearch">确定</el-button>
           <el-button @click="layer_status = false" size="small">取 消</el-button>
+          <el-button type="primary" size="small" @click="statusSearch">确定</el-button>
         </div>
       </el-dialog>
     </div>
@@ -161,24 +161,31 @@
           的APP账号，如果需要请引导客户在APP端完成签约或者完成支付操作
         </div>
         <div slot="footer" class="dialog-footer">
-          <el-button type="primary" size="small" @click="postSaveData">确定</el-button>
           <el-button @click="layer_alert = false" size="small">取 消</el-button>
+          <el-button type="primary" size="small" @click="postSaveData">确定</el-button>
         </div>
+      </el-dialog>
+    </div>
+
+    <div class="dialog-info">
+      <el-dialog :visible.sync="layer_contract"
+        width="100%" height="100%" :fullscreen="true">
+        <iframe :src="contactUrl" width="100%" align="" :height="contactHeight"></iframe>
       </el-dialog>
     </div>
 
     <!-- 订单信息 -->
     <div class="dialog-info">
-      <el-dialog title="租客录入" :visible.sync="layer_order" width="720px" @close="dialogClose">
-        <el-form :model="ruleForm" status-icon :rules="rules" ref="ruleForm" label-width="120px" size="small">
+      <el-dialog title="订单信息" :visible.sync="layer_order" width="720px" @close="orderForm = {}">
+        <el-form :model="orderForm" status-icon :rules="rules" ref="orderForm" label-width="120px" size="small">
           <div class="clearfix">
             <el-col :span="9">
-              <el-form-item label="姓名" prop="customerName">
-                <el-input v-model="ruleForm.customerName" disabled></el-input>
+              <el-form-item label="姓名">
+                <el-input v-model="orderForm.contactName" disabled></el-input>
               </el-form-item>
             </el-col>
             <el-col :span="3">
-              <el-select size="small" v-model="ruleForm.customerGender"
+              <el-select size="small" v-model="orderForm.customerGender"
                   placeholder="" style="width:100%" disabled>
                   <el-option
                     v-for="item in sexOpts"
@@ -189,15 +196,15 @@
                 </el-select>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="手机号码" prop="customerMobile">
-                <el-input v-model.number="ruleForm.customerMobile" disabled></el-input>
+              <el-form-item label="手机号码">
+                <el-input v-model.number="orderForm.contactMobile" disabled></el-input>
               </el-form-item>
             </el-col>
           </div>
           <div class="clearfix">
             <el-col :span="12">
               <el-form-item label="身份证号码" prop="customerCardNo">
-                <el-input v-model="ruleForm.customerCardNo" disabled></el-input>
+                <el-input v-model="orderForm.customerCardNo" disabled></el-input>
               </el-form-item>
             </el-col>
             <el-col :span="12">
@@ -211,14 +218,14 @@
           <div class="clearfix">
             <el-col :span="12">
               <el-form-item label="房价" prop="rentFee">
-                <el-input v-model="ruleForm.rentFee" disabled>
+                <el-input v-model="orderForm.rentFee" disabled>
                   <template slot="append">元/月</template>
                 </el-input>
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="押金" prop="depositFee">
-                <el-input v-model="ruleForm.depositFee" disabled>
+                <el-input v-model="orderForm.depositFee" disabled>
                   <template slot="append">元</template>
                 </el-input>
               </el-form-item>
@@ -227,44 +234,34 @@
           <div class="clearfix">
             <el-col :span="12">
               <el-form-item label="合同开始日期">
-                <el-date-picker
-                  v-model="ruleForm.startDate"
-                  type="datetime"
-                  disabled
-                  placeholder="选择日期">
-                </el-date-picker>
+                <el-input :value="orderForm.startTime | dateStr" disabled></el-input>
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="合同结束日期">
-                <el-date-picker
-                  v-model="ruleForm.startDate"
-                  type="datetime"
-                  disabled
-                  placeholder="选择日期">
-                </el-date-picker>
+                <el-input :value="orderForm.endTime | dateStr" disabled></el-input>
               </el-form-item>
             </el-col>
           </div>
           <div class="clearfix border orderBox">
             <div v-for="(item,index) in orderData" :class="{clearfix:true,borderBottom : index == 0}">
-              <el-col :span="5">{{item.name}}</el-col>
-              <el-col :span="4">{{item.price}}</el-col>
-              <el-col :span="5">{{item.date}}</el-col>
-              <el-col :span="4">{{item.type}}</el-col>
-              <el-col :span="6">{{item.realDate}}</el-col>
+              <el-col :span="5">{{item.period | nameStr}}</el-col>
+              <el-col :span="4">{{item.repayAmt}}</el-col>
+              <el-col :span="6">{{item.repayDate | dateStr}}</el-col>
+              <el-col :span="3">{{item.status | statusStr}}</el-col>
+              <el-col :span="6">{{item.realRepayDate | dateStr}}</el-col>
             </div>
           </div>
           <div style="padding-top:10px" v-if="isLook">
-            <el-button type="primary" size="small" @click="rentContract">房租合同</el-button>
-            <el-button type="primary" size="small" @click="stageContract">分期合同</el-button>
+            <el-button type="primary" size="small" @click="lookContract(1)">房租合同</el-button>
+            <el-button type="primary" size="small" @click="lookContract(2)">分期合同</el-button>
           </div>
         </el-form>
 
         <div slot="footer" class="dialog-footer">
           <div v-if="!isLook">
-            <el-button type="primary" size="small" @click="handleSaveData">首笔确认收款</el-button>
-            <el-button type="primary" size="small" @click="handleSaveData">取消录入</el-button>
+            <el-button type="primary" size="small" @click="investment">首笔确认收款</el-button>
+            <el-button type="primary" size="small" @click="cancelOrder">取消录入</el-button>
             <el-button @click="layer_order = false" size="small">取 消</el-button>
           </div>
         </div>
@@ -279,33 +276,46 @@
 import waves from '@/directive/waves' // 水波纹指令
 import { validateMobile } from '@/utils/validate'
 import { ObjectMap, deepClone, parseTime } from '@/utils'
-import { houseStateApi,createOrderApi } from '@/api/rentals'
+import { houseStateApi, createOrderApi, contractApi, orderListApi, planListApi, firstConfirmOrderApi, fcheckOutApi } from '@/api/rentals'
 const intelligentDevice = () => import('./components/intelligentDevice')
 export default {
   name: 'rentals',
   directives: {
-      waves
+    waves
   },
   components: {
     intelligentDevice
   },
   filters: {
     statusFilter(status) {
-        const statusMap = {
-            '1': 'primary',
-            '2': 'primary',
-            '3': 'info'
-        }
-        return statusMap[status] || 'primary'
+      const statusMap = {
+        '1': 'primary',
+        '2': 'primary',
+        '3': 'info'
+      }
+      return statusMap[status] || 'primary'
     },
     filterStr(status, key) {
       const statusText = {
-          '1': '已定',
-          '2': '已租',
-          '3': '未租'
+        '1': '已定',
+        '2': '已租',
+        '3': '未租'
       }
       return statusText[status] || '未租';
     },
+    dateStr(val) {
+      return val ? parseTime(val) : '';
+    },
+    nameStr(val) {
+      let str = '';
+      if (val) {
+        str = val == 1 ? '首期租金' : `第${val}期租金`
+      }
+      return str;
+    },
+    statusStr(val) {
+      return val == 2 ? '已还款' : '未还款'
+    }
   },
   data() {
     const validatePhone = (rule, value, callback) => {
@@ -350,6 +360,7 @@ export default {
         {label: '男', value: 1},
         {label: '女', value: 2},
       ],
+      locationUrl: 'http://www.baidu.com',
       isDidsabled: false,
       houseType: 1,
       ruleForm: {
@@ -365,10 +376,12 @@ export default {
         customerCardType: 1,
         customerCardNo: ''
       },
+      orderForm: {},
       statusForm: {
         houseType: 2,
         roomCode: ''
       },
+      layer_contract: false,
       listLoading: false,
       layer_alert: false,
       layer_status: false,
@@ -379,49 +392,22 @@ export default {
         { prop:'houseState', label: '状态', type:'status'}
       ],
       tableHeight: 300,
+      contactHeight: 500,
+      contactUrl: '',
       userId: localStorage.getItem('userId'),
       accountName: '',
       tableData: [
-        {roomCode:'200000001',houseState:3}
+        {roomCode:'200001968',houseState:2}
       ],
-      orderData: [
-        {
-          name: '首期租金',
-          price: '9999.99',
-          date: '2018/03/12',
-          type: '已支付',
-          realDate: '2018/03/14 12:12:12'
-        },
-        {
-          name: '第二期租金',
-          price: '9999.99',
-          date: '2018/03/12',
-          type: '已支付',
-          realDate: '2018/03/14 12:12:12'
-        },
-        {
-          name: '第三期租金',
-          price: '9999.99',
-          date: '2018/03/12',
-          type: '已支付',
-          realDate: '2018/03/14 12:12:12'
-        },
-        {
-          name: '第四期租金',
-          price: '9999.99',
-          date: '2018/03/12',
-          type: '已支付',
-          realDate: '2018/03/14 12:12:12'
-        },
-      ],
+      orderData: [],
       total: null,
+      orderNo: '',
       pageItems: {
         pageNo: 1,
         pageSize: 20
       },
       pageSizeList: [10, 20, 30, 50],
       layer_showInfo: false,
-      layer_showInfo2: true,
       houseType: 1,//分散式1 集中式2
     }
   },
@@ -429,9 +415,11 @@ export default {
     /* 表格高度控制 */
     let temp_height = document.body.clientHeight - 200;
     this.tableHeight = temp_height > 300 ? temp_height : 300;
+    this.contactHeight = document.body.clientHeight - 80;
     window.onresize = () => {
       return (() => {
         temp_height = document.body.clientHeight - 200;
+        this.contactHeight = document.body.clientHeight - 80;
         this.tableHeight = this.tableHeight = temp_height > 300 ? temp_height : 300;
       })()
     }
@@ -452,17 +440,13 @@ export default {
     }
   },
   methods: {
-    delData () {
-      this.$refs.dialog.dialogVisible = true
-    },
     searchRoom() {
       this.layer_status = true;
-      return
     },
-    statusSearch() {
+    statusSearch() {//查询房态
       this.$refs.statusForm.validate((valid) => {
         if (valid) {
-          this.statusForm.accountName = '6feb893c0080446f84fa234bc9665547';
+          this.statusForm.accountName = this.accountName;
           houseStateApi(this.statusForm).then(response => {
             if (response.data) {
               this.tableData.push(response.data)
@@ -486,18 +470,97 @@ export default {
       this.ruleForm.roomCode = val.roomCode;
       this.layer_showInfo = true;
     },
-    orderLook() {//订单详情
-      this.isLook = true;
-      this.layer_order = true;
+    orderLook(val) {//订单详情
+      let param = {
+        accountName: this.accountName,
+        roomCode: val.roomCode
+      }
+      orderListApi(param).then(response => {
+        if (response.data) {
+          for (var i in response.data) {
+            if (response.data[i].status == 3) {
+              this.orderForm = response.data[i];
+              let plan = {
+                accountName: this.accountName,
+                orderNo: response.data[i].orderNo
+              }
+              this.orderNo = response.data[i].orderNo;
+
+              // 查询交租计划
+              planListApi(plan).then(response => {
+                this.orderData = response.data;
+              }).catch(response => {})
+
+              this.isLook = true;
+              this.layer_order = true;
+              return false;
+            }
+          }
+
+        }
+        this.layer_status = false;
+      }).catch(response => {})
     },
     checkOut() {//退房
+      this.$confirm('确定要退房吗？退房后，租客会失去门锁APP开门权限', '退房提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
 
+      }).catch(() => {});
     },
-    rentContract() {//房租合同
-
+    investment() {//首笔确认收款
+      this.$confirm('已确认收到首期租金', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        let param = {
+          orderNo: this.orderNo,
+          payType: 1,//默认现金
+          accountName: this.accountName
+        }
+        firstConfirmOrderApi(param).then(response => {
+          this.isLook = true;
+          this.layer_showInfo = false;
+          this.layer_order = true;
+        }).catch(response => {})
+      }).catch(() => {});
     },
-    stageContract() {//分期合同
-
+    cancelOrder() {//取消录入
+      this.$confirm('确定要取消录入吗？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        this.layer_showInfo = false;
+      }).catch(() => {});
+    },
+    lookContract(type) {//房租合同/分期合同
+      let param = {
+        accountName: this.accountName,
+        orderNo: this.orderNo
+      }
+      contractApi(this.statusForm).then(response => {
+        if (response.data) {
+          let url = null;
+          response.data.map(val => {
+            if (val.type == type) {
+              url = val.contentUrl;
+              return;
+            }
+          })
+          if(url) {
+            this.contactUrl = url;
+            this.layer_contract = true;
+          } else {
+            let msg = '查询到' + (type == 1 ? '房租合同' : '分期合同');
+            this.$message.error(msg);
+          }
+        }
+        this.layer_status = false;
+      }).catch(response => {})
     },
     handleApply() {
       this.layer_order = true;
@@ -534,9 +597,6 @@ export default {
       this.pageItems.pageNo = val;
       this.getGridData(this.pageItems);
     },
-    closeOverlay() {
-      this.layer_showInfo2 = false;
-    },
     deviceInfo() {//智能门锁
       this.$message.error('等台柱子')
     }
@@ -553,7 +613,7 @@ export default {
   }
   .orderBox {
     padding: 5px;
-    line-height: 30px;
+    line-height: 35px;
     .borderBottom {
       border-bottom: 1px solid #ccc;
     }
