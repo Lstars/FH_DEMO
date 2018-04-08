@@ -1,11 +1,7 @@
 <template>
   <div class="app-container">
     <div class="model-search clearfix">
-      <el-radio-group v-model="houseType" size="small" @change="changeType">
-        <el-radio-button label="2">分散式</el-radio-button>
-        <el-radio-button label="1">集中式</el-radio-button>
-      </el-radio-group>
-      <el-button class="right" type="primary" size="small" icon="el-icon-circle-plus-outline" @click.native="searchRoom">查询</el-button>
+      <el-button class="right" type="primary" size="small" icon="el-icon-circle-plus-outline" @click.native="searchRoom">房态查询</el-button>
     </div>
     <div class="model-table" :style="tableStyle">
         <el-table
@@ -21,7 +17,7 @@
                 show-overflow-tooltip>
                 <template slot-scope="scope">
                     <el-tag
-                        v-if="item.type === 'houseState'"
+                        v-if="item.type === 'status'"
                         :type="scope.row[item.prop] | statusFilter">
                         {{scope.row[item.prop] | filterStr('houseState')}}
                     </el-tag>
@@ -33,9 +29,9 @@
             <el-table-column label="操作">
                 <template slot-scope="scope">
                     <el-button type="primary" v-if="scope.row.houseState == 3" size="small" @click.native="orderCreate(scope.row)">租客录入</el-button>
-                    <el-button type="primary" v-if="scope.row.houseState != 3" size="small" @click.native="editData(scope.$index,scope.row)">订单信息</el-button>
-                    <el-button type="primary" size="small" @click.native="delData(scope.$index,scope.row)">智能门锁</el-button>
-                    <el-button type="primary" v-if="scope.row.houseState != 3" size="small" @click.native="editData(scope.$index,scope.row)">退房</el-button>
+                    <el-button type="primary" v-if="scope.row.houseState != 3" size="small" @click.native="orderLook(scope.$index,scope.row)">订单信息</el-button>
+                    <el-button type="primary" size="small" @click.native="deviceInfo(scope.$index,scope.row)">智能门锁</el-button>
+                    <el-button type="primary" v-if="scope.row.houseState != 3" size="small" @click.native="checkOut(scope.$index,scope.row)">退房</el-button>
                 </template>
             </el-table-column>
         </el-table>
@@ -133,6 +129,28 @@
       </el-dialog>
     </div>
 
+    <!-- 房态查询 -->
+    <div class="dialog-info">
+      <el-dialog title="房态查询" :visible.sync="layer_status"
+        width="500px" @close="closeStatus">
+         <el-form :model="statusForm" status-icon :rules="rules" ref="statusForm" label-width="120px" size="small">
+            <el-form-item label="房源类型">
+              <el-radio-group v-model="statusForm.houseType" size="small">
+                <el-radio-button label="2">分散式</el-radio-button>
+                <el-radio-button label="1">集中式</el-radio-button>
+              </el-radio-group>
+            </el-form-item>
+            <el-form-item label="房源编码" prop="roomCode">
+              <el-input v-model="statusForm.roomCode" ></el-input>
+            </el-form-item>
+         </el-form>
+        <div slot="footer" class="dialog-footer">
+          <el-button type="primary" size="small" @click="statusSearch">确定</el-button>
+          <el-button @click="layer_status = false" size="small">取 消</el-button>
+        </div>
+      </el-dialog>
+    </div>
+
     <!-- 确认弹窗 -->
     <div class="dialog-info">
       <el-dialog title="信息" :visible.sync="layer_alert"
@@ -156,12 +174,12 @@
           <div class="clearfix">
             <el-col :span="9">
               <el-form-item label="姓名" prop="customerName">
-                <el-input v-model="ruleForm.customerName" :disabled="isDidsabled"></el-input>
+                <el-input v-model="ruleForm.customerName" disabled></el-input>
               </el-form-item>
             </el-col>
             <el-col :span="3">
               <el-select size="small" v-model="ruleForm.customerGender"
-                  placeholder="" style="width:100%" :disabled="isDidsabled">
+                  placeholder="" style="width:100%" disabled>
                   <el-option
                     v-for="item in sexOpts"
                     :key="item.value"
@@ -172,14 +190,14 @@
             </el-col>
             <el-col :span="12">
               <el-form-item label="手机号码" prop="customerMobile">
-                <el-input v-model.number="ruleForm.customerMobile" :disabled="isDidsabled"></el-input>
+                <el-input v-model.number="ruleForm.customerMobile" disabled></el-input>
               </el-form-item>
             </el-col>
           </div>
           <div class="clearfix">
             <el-col :span="12">
               <el-form-item label="身份证号码" prop="customerCardNo">
-                <el-input v-model="ruleForm.customerCardNo" :disabled="isDidsabled"></el-input>
+                <el-input v-model="ruleForm.customerCardNo" disabled></el-input>
               </el-form-item>
             </el-col>
             <el-col :span="12">
@@ -193,14 +211,14 @@
           <div class="clearfix">
             <el-col :span="12">
               <el-form-item label="房价" prop="rentFee">
-                <el-input v-model="ruleForm.rentFee" :disabled="isDidsabled">
+                <el-input v-model="ruleForm.rentFee" disabled>
                   <template slot="append">元/月</template>
                 </el-input>
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="押金" prop="depositFee">
-                <el-input v-model="ruleForm.depositFee" :disabled="isDidsabled">
+                <el-input v-model="ruleForm.depositFee" disabled>
                   <template slot="append">元</template>
                 </el-input>
               </el-form-item>
@@ -208,25 +226,27 @@
           </div>
           <div class="clearfix">
             <el-col :span="12">
-              <el-form-item label="合同开始日期" prop="startDate" :disabled="isDidsabled">
+              <el-form-item label="合同开始日期">
                 <el-date-picker
                   v-model="ruleForm.startDate"
-                  type="date"
+                  type="datetime"
+                  disabled
                   placeholder="选择日期">
                 </el-date-picker>
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="合同结束日期" prop="startDate" :disabled="isDidsabled">
+              <el-form-item label="合同结束日期">
                 <el-date-picker
                   v-model="ruleForm.startDate"
-                  type="date"
+                  type="datetime"
+                  disabled
                   placeholder="选择日期">
                 </el-date-picker>
               </el-form-item>
             </el-col>
           </div>
-          <!-- <div class="clearfix border orderBox">
+          <div class="clearfix border orderBox">
             <div v-for="(item,index) in orderData" :class="{clearfix:true,borderBottom : index == 0}">
               <el-col :span="5">{{item.name}}</el-col>
               <el-col :span="4">{{item.price}}</el-col>
@@ -234,16 +254,19 @@
               <el-col :span="4">{{item.type}}</el-col>
               <el-col :span="6">{{item.realDate}}</el-col>
             </div>
-          </div> -->
-          <!-- <div style="padding-top:10px">
-            <el-button type="primary" size="small" @click="handleSaveData">房租合同</el-button>
-            <el-button type="primary" size="small" @click="handleSaveData">分期合同</el-button>
-          </div> -->
+          </div>
+          <div style="padding-top:10px" v-if="isLook">
+            <el-button type="primary" size="small" @click="rentContract">房租合同</el-button>
+            <el-button type="primary" size="small" @click="stageContract">分期合同</el-button>
+          </div>
         </el-form>
 
         <div slot="footer" class="dialog-footer">
-          <el-button type="primary" size="small" @click="handleSaveData">确定</el-button>
-          <el-button @click="layer_order = false" size="small">取 消</el-button>
+          <div v-if="!isLook">
+            <el-button type="primary" size="small" @click="handleSaveData">首笔确认收款</el-button>
+            <el-button type="primary" size="small" @click="handleSaveData">取消录入</el-button>
+            <el-button @click="layer_order = false" size="small">取 消</el-button>
+          </div>
         </div>
       </el-dialog>
     </div>
@@ -255,7 +278,7 @@
 <script>
 import waves from '@/directive/waves' // 水波纹指令
 import { validateMobile } from '@/utils/validate'
-import { ObjectMap,deepClone } from '@/utils'
+import { ObjectMap, deepClone, parseTime } from '@/utils'
 import { houseStateApi,createOrderApi } from '@/api/rentals'
 const intelligentDevice = () => import('./components/intelligentDevice')
 export default {
@@ -269,21 +292,19 @@ export default {
   filters: {
     statusFilter(status) {
         const statusMap = {
-            '0': 'info',
-            '1': 'success',
-            '2': 'danger'
+            '1': 'primary',
+            '2': 'primary',
+            '3': 'info'
         }
-        return statusMap[status] || 'info'
+        return statusMap[status] || 'primary'
     },
     filterStr(status, key) {
-      console.log(key)
-      const statusStrData = {
-        'status': ['已定','已租','未租']
+      const statusText = {
+          '1': '已定',
+          '2': '已租',
+          '3': '未租'
       }
-      if (!statusStrData[key]) {
-        return '';
-      }
-      return ;
+      return statusText[status] || '未租';
     },
   },
   data() {
@@ -317,8 +338,10 @@ export default {
         ],
         customerCardNo: [
           { required: true, message: '请输入身份证号', trigger: 'blur' }
+        ],
+        roomCode: [
+          { required: true, message: '请输入房源编码', trigger: 'blur' }
         ]
-
       },
       selectOptions: [
         {label: '全部房源', value: 1},
@@ -339,12 +362,18 @@ export default {
         customerName: '',
         customerGender: 1,
         customerMobile: '',
-        customerCardType: '',
+        customerCardType: 1,
         customerCardNo: ''
+      },
+      statusForm: {
+        houseType: 2,
+        roomCode: ''
       },
       listLoading: false,
       layer_alert: false,
+      layer_status: false,
       layer_order: false,
+      isLook: false,//是否订单详情
       colModels:[
         { prop:'roomCode', label: '房源编码'},
         { prop:'houseState', label: '状态', type:'status'}
@@ -353,10 +382,7 @@ export default {
       userId: localStorage.getItem('userId'),
       accountName: '',
       tableData: [
-        {
-          "roomCode" : 100000011,
-          "houseState" : "3"
-        }
+        {roomCode:'200000001',houseState:3}
       ],
       orderData: [
         {
@@ -430,45 +456,50 @@ export default {
       this.$refs.dialog.dialogVisible = true
     },
     searchRoom() {
-      this.$prompt('请输入房源编码', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        inputValidator(val) {
-          if(!val) {
-            return '房源编码不能为空'
-          }
+      this.layer_status = true;
+      return
+    },
+    statusSearch() {
+      this.$refs.statusForm.validate((valid) => {
+        if (valid) {
+          this.statusForm.accountName = '6feb893c0080446f84fa234bc9665547';
+          houseStateApi(this.statusForm).then(response => {
+            if (response.data) {
+              this.tableData.push(response.data)
+            }
+            this.layer_status = false;
+          }).catch(response => {})
+        } else {
+          return false;
         }
-      }).then(({ value }) => {
-        // let param = {
-        //   accountName: this.accountName,
-        //   roomCode: value,
-        //   houseType: this.houseType
-        // }
-        let param = {
-          accountName: '6feb893c0080446f84fa234bc9665547',
-          roomCode: value,
-          houseType: 2
-        }
-        // this.tableData = [
-        //   {
-        //     "roomCode" : value,
-        //     "houseState" : "1"
-        //   }
-        // ]
-        //TODO 系统异常
-        houseStateApi(param).then(response => {
-
-        }).catch(response => {})
-      }).catch(() => {
-
       });
     },
-    orderCreate(val) {
+    closeStatus() {
+      this.statusForm = {
+        houseType: 2,
+        roomCode: ''
+      }
+      this.$refs.statusForm.clearValidate();
+    },
+    orderCreate(val) {//租客录入
+      this.isLook = false;
       this.ruleForm.roomCode = val.roomCode;
       this.layer_showInfo = true;
     },
+    orderLook() {//订单详情
+      this.isLook = true;
+      this.layer_order = true;
+    },
+    checkOut() {//退房
+
+    },
+    rentContract() {//房租合同
+
+    },
+    stageContract() {//分期合同
+
+    },
     handleApply() {
-      // this.layer_showInfo = true;
       this.layer_order = true;
     },
     dialogClose() {
@@ -487,8 +518,12 @@ export default {
 
     },
     postSaveData(){
+      this.ruleForm.startDate = parseTime(this.ruleForm.startDate);
+      this.ruleForm.accountName = '6feb893c0080446f84fa234bc9665547';
       createOrderApi(this.ruleForm).then(response => {
-
+        this.layer_alert = false;
+        this.layer_showInfo = false;
+        this.layer_order = true;
       }).catch(response => {})
     },
     handleSizeChange(val) {
@@ -499,10 +534,11 @@ export default {
       this.pageItems.pageNo = val;
       this.getGridData(this.pageItems);
     },
-    changeType() {
-    },
     closeOverlay() {
       this.layer_showInfo2 = false;
+    },
+    deviceInfo() {//智能门锁
+      this.$message.error('等台柱子')
     }
   }
 }

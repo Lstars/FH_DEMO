@@ -151,7 +151,7 @@ export default {
       }
     };
     return {
-      actionBaseUrl: 'https://dev.mdguanjia.com/bop',
+      actionBaseUrl: 'https://api.mdguanjia.com/bop',
       ruleForm: {
         mobile: '',
         name: '',
@@ -178,9 +178,14 @@ export default {
   },
   mounted() {
     this.layer_showInfo = this.isShow;
+    this.ruleForm = Object.assign(this.ruleForm,this.nowFinance);
   },
   methods: {
     handleSaveData() {
+      if (this.fileList.length <= 0) {
+        this.$message.error('请先上传图片')
+        return false
+      }
       let param = {
         signInfo: {
           signPicUrl: this.fileList[0].url
@@ -190,12 +195,13 @@ export default {
       }
       otherInfoApi(param).then(response => {
         this.$message.success('电子签章保存成功');
+        this.$emit('updateType');
       }).catch(response => {
 
       })
     },
     dialogClose() {
-      this.$emit('closeOverlay')
+      this.$emit('closeOverlay');
       this.fileList = [];
     },
     /* 上传图片 */

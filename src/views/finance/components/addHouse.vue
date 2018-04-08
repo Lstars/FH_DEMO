@@ -9,7 +9,7 @@
         </el-form-item>
 	      <div class="clearfix">
 	        <el-col :span="12">
-            <el-form-item label="房源所在地区" prop="zone">
+            <el-form-item label="房源所在地区">
               <area-select v-model="ruleForm.zone" :props="prop"></area-select>
             </el-form-item>
 	        </el-col>
@@ -146,9 +146,6 @@ export default {
     };
     return {
       rules: {
-        zone: [
-          { required: true, message: '请选择省市区', trigger: 'change' }
-        ],
         subdistrictName: [
           { required: true, message: '请输入公寓/小区', trigger: 'blur' }
         ],
@@ -170,7 +167,7 @@ export default {
         value: 'label',
         children: 'children'
       },
-      actionBaseUrl: 'https://dev.mdguanjia.com/bop',
+      actionBaseUrl: 'https://api.mdguanjia.com/bop',
       ruleForm: {
         radio: '1',
         zone: [],
@@ -190,7 +187,7 @@ export default {
             roomNum: '',
             hallNum: '',
             toiletNum: '',
-            roomType: '三室一厅一卫',
+            roomType: '',
             rentTypeName: '磐谷分期·月付',
             rentFee: '999',
             depositFee: '999',
@@ -205,7 +202,7 @@ export default {
             roomNum: '',
             hallNum: '',
             toiletNum: '',
-            roomType: '三室一厅一卫',
+            roomType: '',
             rentTypeName: '磐谷分期·月付',
             rentFee: '999',
             depositFee: '999',
@@ -231,7 +228,18 @@ export default {
     handleSaveData() {
 
       this.ruleForm.accountName = this.accountName;
-      addHouseApi(ObjectMap(this.ruleForm)).then(response => {
+      this.ruleForm.params.map(val => {
+        val.roomType = `${val.roomNum || 0}-${val.hallNum || 0}-${val.toiletNum || 0}`
+      })
+      let deepForm = deepClone(this.ruleForm);
+      deepForm.params.map(key => {
+        let pic = [];
+        key.pictureList.map(val => {
+          pic.push(val.url)
+        });
+        key.pictureList = pic.join(',');
+      })
+      addHouseApi(ObjectMap(deepForm)).then(response => {
         //保存数据到离线存储
         this.ruleForm.houseAddress = `${this.ruleForm.zone[0]} ${this.ruleForm.zone[1]} ${this.ruleForm.zone[2]}`;
         this.ruleForm.houseInfo = this.ruleForm.radio == 1
@@ -313,7 +321,6 @@ export default {
       this.layer_showInfo = val;
     },
     radio(val) {
-      console.log(val);
       if (val == '1') {
         this.ruleForm.houseType = 1;
         this.ruleForm.roomType = 1;
@@ -321,6 +328,9 @@ export default {
         this.ruleForm.houseType = 2;
         this.ruleForm.roomType = val == '2' ? 2 : 1;
       }
+    },
+    uuid(val) {
+      this.accountName = val;
     }
   }
 }

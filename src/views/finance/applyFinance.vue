@@ -2,7 +2,7 @@
   <div class="app-container">
     <div class="model-search clearfix">
       <el-button class="right left10" type="primary" size="small" v-if="isFinance" @click.native="layer_addHouse = true">录入房源并申请</el-button>
-      <el-button class="right" type="primary" size="small" v-if="isFinance" @click.native="layer_signature = true">电子签章</el-button>
+      <el-button class="right" type="primary" size="small" v-if="isFinance && !isReview" @click.native="layer_signature = true">电子签章</el-button>
       <el-button class="right" type="primary" size="small" v-if="!isFinance" @click.native="handleApply">成为金融用户</el-button>
     </div>
     <div class="model-table" :style="tableStyle">
@@ -76,7 +76,7 @@
 
     <!-- 电子签章 -->
     <div class="dialog-info">
-      <signature :isShow="layer_signature" :nowFinance="nowFinance" @closeOverlay="layer_signature = false"></signature>
+      <signature :isShow="layer_signature" :nowFinance="nowFinance" @closeOverlay="layer_signature = false" @updateType="closeSignature"></signature>
     </div>
     <!-- 录入房源 -->
     <div class="dialog-info">
@@ -91,7 +91,7 @@ import waves from '@/directive/waves' // 水波纹指令
 import { validateMobile } from '@/utils/validate'
 import signature from './components/signature'
 import addHouse from './components/addHouse'
-import { ObjectMap } from '@/utils'
+import { ObjectMap,deepClone } from '@/utils'
 import { addAccountApi } from '@/api/applyFinance'
 export default {
   name: 'applyFinance',
@@ -132,6 +132,7 @@ export default {
       userId: localStorage.getItem('userId'),
       accountName: null,
       financeUser: [],//已申请的用户数组
+      isReview:false,//是否申请过电子签章
       nowFinance: {},
       isFinance:false,//是否已申请为金融用户
       formData: {
@@ -139,6 +140,7 @@ export default {
         houseType: 1,
         searchField: ''
       },
+      defalutForm: {},
       ruleForm: {
         mobile: '',
         name: '',
@@ -163,6 +165,20 @@ export default {
       houseType: 1,//分散式1 集中式2
     }
   },
+  created() {
+    this.defalutForm = deepClone(this.ruleForm);
+    this.tableData = JSON.parse(localStorage.getItem(this.userId)) || [];
+    this.financeUser = JSON.parse(localStorage.getItem('financeUser')) || [];
+    let accountName = null;
+    this.financeUser.map(val => {
+      if (val.userId == this.userId) {
+        this.isFinance = true;
+        this.accountName = val.accountName;
+        this.nowFinance = val;
+        this.isReview = val.isReview || false;
+      }
+    })
+  },
   mounted() {
     /* 表格高度控制 */
     let temp_height = document.body.clientHeight - 200;
@@ -173,16 +189,6 @@ export default {
         this.tableHeight = this.tableHeight = temp_height > 300 ? temp_height : 300;
       })()
     }
-    this.tableData = JSON.parse(localStorage.getItem(this.userId)) || [];
-    this.financeUser = JSON.parse(localStorage.getItem('financeUser')) || [];
-    let accountName = null;
-    this.financeUser.map(val => {
-      if (val.userId == this.userId) {
-        this.isFinance = true;
-        this.accountName = val.accountName;
-        this.nowFinance = val;
-      }
-    })
   },
   computed: {
     tableStyle: function() {
@@ -203,14 +209,17 @@ export default {
     dialogClose() {
       this.layer_showInfo = false;
       this.$refs.ruleForm.clearValidate();
-      Object.keys(this.ruleForm).forEach((key) => {
-        if (key == 'radio') {
-          this.ruleForm[key] = 1;
-        } else {
-          this.ruleForm[key] = '';
+      this.ruleForm = deepClone(this.defalutForm)
+    },
+    closeSignature() {
+      this.financeUser.map(val => {
+        if (val.userId == this.userId) {
+          this.isReview = true;
+          val.isReview = true;
         }
-
       })
+      localStorage.setItem('financeUser',JSON.stringify(this.financeUser));
+      this.layer_signature = false;
     },
     handleSaveData() {
       this.$refs.ruleForm.validate((valid) => {
@@ -234,16 +243,19 @@ export default {
 
           addAccountApi(ObjectMap(param)).then(response => {
             let userData = {
-              accountName: response.data.uuid,
+              accountName: response.data.accountName,
               userId: this.userId,
+              houseType: this.ruleForm.radio,
               name: this.ruleForm.name,
               cardNo: this.ruleForm.cardNo,
               mobile: this.ruleForm.mobile,
               company: this.ruleForm.company,
               companyNo: this.ruleForm.companyNo
             }
+            this.nowFinance = userData;
             this.financeUser.push(userData);
             this.isFinance = true;
+            this.accountName = response.data.accountName;
             localStorage.setItem('financeUser',JSON.stringify(this.financeUser));
             this.layer_showInfo = false;
           }).catch(response => {

@@ -53,7 +53,6 @@ export default {
   },
   methods: {
     handleChange(selected) {
-      console.log(selected)
       this.$emit('input', selected);
     }
   },

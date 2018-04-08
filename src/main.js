@@ -29,38 +29,21 @@ Object.keys(filters).forEach(key => {
 });
 
 const whiteList = ['/login'];
-// router.beforeEach((to, from, next) => {
-//   NProgress.start();
-  // if (getSessionId()) {
-  //   if (to.path === '/login') {
-  //     next({ path: '/' });
-  //   } else {
-  //     if (store.getters.roles.length === 0) {
-        store.dispatch('GetInfo').then(res => {
+router.beforeEach((to, from, next) => {
+  NProgress.start();
 
-          const roles = 'admin'
-          store.dispatch('GenerateRoutes', { roles }).then(() => {
-            router.addRoutes(store.getters.addRouters);
-            // next({ ...to });
-          })
-        })
-  //     } else {
-  //       next();
-  //     }
-  //   }
-  // } else {
-  //   if (whiteList.indexOf(to.path) !== -1) {
-  //     next()
-  //   } else {
-  //     next('/login');
-  //     NProgress.done();
-  //   }
-  // }
-// });
+  store.dispatch('GetInfo').then(res => {
+    const roles = 'admin'
+    store.dispatch('GenerateRoutes', { roles }).then(() => {
+      router.addRoutes(store.getters.addRouters);
+      next();
+    })
+  })
+});
 
-// router.afterEach(() => {
-//   NProgress.done();
-// });
+router.afterEach(() => {
+  NProgress.done();
+});
 
 new Vue({
   el: '#app',
