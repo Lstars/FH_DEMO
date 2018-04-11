@@ -26,11 +26,21 @@
               <el-input v-model.trim="ruleForm.addressName"></el-input>
             </el-form-item>
 	        </el-col>
-	        <el-col :span="12">
-            <el-form-item label="楼幢" prop="buildingName">
-              <el-input v-model.trim="ruleForm.buildingName"></el-input>
-            </el-form-item>
-	        </el-col>
+            <el-col :span="4">
+              <el-form-item label="楼幢" prop="buildingName" label-width="60px">
+                <el-input v-model.trim="ruleForm.buildingName"></el-input>
+              </el-form-item>
+            </el-col>
+            <el-col :span="4">
+              <el-form-item label="单元" prop="unitCode" label-width="60px">
+                <el-input v-model.trim="ruleForm.unitCode"></el-input>
+              </el-form-item>
+            </el-col>
+            <el-col :span="4">
+              <el-form-item label="楼层" prop="floorName" label-width="60px">
+                <el-input v-model.trim="ruleForm.floorName"></el-input>
+              </el-form-item>
+            </el-col>
 	      </div>
 	      <div class="clearfix">
           <el-form-item label="房源所属门店" >
@@ -155,6 +165,12 @@ export default {
         buildingName: [
           { required: true, message: '请输入楼幢', trigger: 'blur' }
         ],
+        unitCode: [
+          { required: true, message: '请输入单元', trigger: 'blur' }
+        ],
+        floorName: [
+          { required: true, message: '请输入楼层', trigger: 'blur' }
+        ],
         roomName: [
           { required: true, message: '请输入房间号', trigger: 'blur' }
         ],
@@ -176,6 +192,8 @@ export default {
         subdistrictName: '',
         addressName: '',
         buildingName: '',
+        unitCode:'',
+        floorName:'',
         storeName: '',
         leaseType: 1,
         houseType: 1,
@@ -232,6 +250,14 @@ export default {
         val.roomType = `${val.roomNum || 0}-${val.hallNum || 0}-${val.toiletNum || 0}`
       })
       let deepForm = deepClone(this.ruleForm);
+      if (deepForm.houseType == 2 && deepForm.leaseType == 1) {//分散式整租
+        deepForm.params.splice(1,1);
+      } else {//如果第二房间的数据没填就不传，后台偷懒这里自己处理
+        var second = deepForm.params[1];
+        if (second.roomName == '' || second.area == '' || second.roomType == '') {
+          deepForm.params.splice(1,1);
+        }
+      }
       deepForm.params.map(key => {
         let pic = [];
         key.pictureList.map(val => {
@@ -320,13 +346,13 @@ export default {
     isShow(val) {
       this.layer_showInfo = val;
     },
-    radio(val) {
+    'ruleForm.radio'(val) {
       if (val == '1') {
         this.ruleForm.houseType = 1;
-        this.ruleForm.roomType = 1;
+        this.ruleForm.leaseType = 1;
       } else {
         this.ruleForm.houseType = 2;
-        this.ruleForm.roomType = val == '2' ? 2 : 1;
+        this.ruleForm.leaseType = val == '2' ? 2 : 1;
       }
     },
     uuid(val) {

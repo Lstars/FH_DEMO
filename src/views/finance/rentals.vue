@@ -120,11 +120,21 @@
               </el-form-item>
             </el-col>
           </div>
+          <div class="clearfix border orderBox" style="margin-top: 10px" v-show="showFirst">
+            <el-col :span="5">首期租金</el-col>
+            <el-col :span="4">{{ruleForm.rentFee}}</el-col>
+            <el-col :span="6"></el-col>
+            <el-col :span="3">未付款</el-col>
+            <el-col :span="6"></el-col>
+          </div>
           <div class="clearfix" style="padding-top: 10px">请引导租客在APP签订合同后再付款</div>
         </el-form>
         <div slot="footer" class="dialog-footer">
+          <el-button type="primary" size="small" v-show="!showFirst" @click="handleSaveData">确定</el-button>
+          <el-button type="primary" size="small" v-show="showFirst" @click="investment">首笔确认收款</el-button>
+          <el-button type="primary" size="small" v-show="showFirst" @click="cancelOrder">取消录入</el-button>
           <el-button @click="layer_showInfo = false" size="small">取 消</el-button>
-          <el-button type="primary" size="small" @click="handleSaveData">确定</el-button>
+
         </div>
       </el-dialog>
     </div>
@@ -146,7 +156,7 @@
          </el-form>
         <div slot="footer" class="dialog-footer">
           <el-button @click="layer_status = false" size="small">取 消</el-button>
-          <el-button type="primary" size="small" @click="statusSearch">确定</el-button>
+           <el-button type="primary" size="small" @click="statusSearch">确定</el-button>
         </div>
       </el-dialog>
     </div>
@@ -154,7 +164,7 @@
     <!-- 确认弹窗 -->
     <div class="dialog-info">
       <el-dialog title="信息" :visible.sync="layer_alert"
-        width="500px" @close="dialogClose">
+        width="500px">
         <div>
           请确认客户资料是否正确，点击确定后，<br>
           订单信息会同步至客户（手机号）<span class="red">{{ruleForm.customerMobile}}</span>,<br>
@@ -243,7 +253,7 @@
               </el-form-item>
             </el-col>
           </div>
-          <div class="clearfix border orderBox">
+          <div class="clearfix border orderBox" v-if="orderData.length > 0">
             <div v-for="(item,index) in orderData" :class="{clearfix:true,borderBottom : index == 0}">
               <el-col :span="5">{{item.period | nameStr}}</el-col>
               <el-col :span="4">{{item.repayAmt}}</el-col>
@@ -257,14 +267,6 @@
             <el-button type="primary" size="small" @click="lookContract(2)">分期合同</el-button>
           </div>
         </el-form>
-
-        <div slot="footer" class="dialog-footer">
-          <div v-if="!isLook">
-            <el-button type="primary" size="small" @click="investment">首笔确认收款</el-button>
-            <el-button type="primary" size="small" @click="cancelOrder">取消录入</el-button>
-            <el-button @click="layer_order = false" size="small">取 消</el-button>
-          </div>
-        </div>
       </el-dialog>
     </div>
     <intelligentDevice ref="dialog"></intelligentDevice>
@@ -381,6 +383,7 @@ export default {
         houseType: 2,
         roomCode: ''
       },
+      showFirst: false,
       layer_contract: false,
       listLoading: false,
       layer_alert: false,
@@ -396,9 +399,7 @@ export default {
       contactUrl: '',
       userId: localStorage.getItem('userId'),
       accountName: '',
-      tableData: [
-        {roomCode:'200001968',houseState:2}
-      ],
+      tableData: [],
       orderData: [],
       total: null,
       orderNo: '',
@@ -406,6 +407,7 @@ export default {
         pageNo: 1,
         pageSize: 20
       },
+      line: '',
       pageSizeList: [10, 20, 30, 50],
       layer_showInfo: false,
       houseType: 1,//分散式1 集中式2
@@ -469,44 +471,73 @@ export default {
       this.isLook = false;
       this.ruleForm.roomCode = val.roomCode;
       this.layer_showInfo = true;
+      this.line = val;
     },
     orderLook(val) {//订单详情
       let param = {
         accountName: this.accountName,
         roomCode: val.roomCode
       }
-      orderListApi(param).then(response => {
-        if (response.data) {
-          for (var i in response.data) {
-            if (response.data[i].status == 3) {
-              this.orderForm = response.data[i];
-              let plan = {
-                accountName: this.accountName,
-                orderNo: response.data[i].orderNo
-              }
-              this.orderNo = response.data[i].orderNo;
-
-              // 查询交租计划
-              planListApi(plan).then(response => {
-                this.orderData = response.data;
-              }).catch(response => {})
-
-              this.isLook = true;
-              this.layer_order = true;
-              return false;
-            }
-          }
-
+      this.getOrderNo(val).then(orderNo => {
+        let plan = {
+          accountName: this.accountName,
+          orderNo: orderNo
         }
-        this.layer_status = false;
+        this.orderNo = orderNo;
+        // 查询交租计划
+        planListApi(plan).then(response => {
+          this.orderData = response.data;
+        }).catch(response => {})
+
+        this.isLook = true;
+        this.layer_order = true;
+        return false;
       }).catch(response => {})
     },
-    checkOut() {//退房
+    getOrderNo(val) {//获取订单号
+      return new Promise((resolve,reject) => {
+        let param = {
+          accountName: this.accountName,
+          roomCode: val.roomCode
+        }
+        orderListApi(param).then(response => {
+          if (response.data) {
+            for (var i in response.data) {
+              if (response.data[i].status == 3) {
+                this.orderForm = response.data[i];
+                resolve(response.data[i].orderNo)
+              }
+            }
+
+          }
+          this.layer_status = false;
+        }).catch(response => {
+          reject()
+        })
+      })
+    },
+    checkOut(val) {//退房
       this.$confirm('确定要退房吗？退房后，租客会失去门锁APP开门权限', '退房提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
+        let param = {
+          accountName: this.accountName,
+          roomCode: val.roomCode
+        }
+        //获取订单号退房
+        this.getOrderNo(val).then(orderNo => {
+          let checkOutData = {
+            accountName: this.accountName,
+            orderNo: orderNo,
+            checkoutDate: parseTime(new Date())
+          }
+          fcheckOutApi(checkOutData).then(response => {
+            this.$message.success('退房成功');
+            val.houseState = 3;
+          }).catch(response => {})
+        })
 
       }).catch(() => {});
     },
@@ -524,7 +555,7 @@ export default {
         firstConfirmOrderApi(param).then(response => {
           this.isLook = true;
           this.layer_showInfo = false;
-          this.layer_order = true;
+          this.line.houseState = 2;
         }).catch(response => {})
       }).catch(() => {});
     },
@@ -568,6 +599,7 @@ export default {
     dialogClose() {
       this.layer_showInfo = false;
       this.$refs.ruleForm.clearValidate();
+      this.showFirst = false;
       this.ruleForm = deepClone(this.defaultRuleForm)
     },
     handleSaveData() {
@@ -582,11 +614,12 @@ export default {
     },
     postSaveData(){
       this.ruleForm.startDate = parseTime(this.ruleForm.startDate);
-      this.ruleForm.accountName = '6feb893c0080446f84fa234bc9665547';
+      this.ruleForm.accountName = this.accountName;
+
       createOrderApi(this.ruleForm).then(response => {
         this.layer_alert = false;
-        this.layer_showInfo = false;
-        this.layer_order = true;
+        this.showFirst = true;
+        this.orderNo = response.data;
       }).catch(response => {})
     },
     handleSizeChange(val) {
