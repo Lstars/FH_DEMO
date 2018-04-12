@@ -190,7 +190,7 @@ export default {
           signPicUrl: this.fileList[0].url
         },
         phoneNo: this.ruleForm.mobile,
-        uuid: this.ruleForm.accountName
+        accountName: this.ruleForm.accountName
       }
       otherInfoApi(param).then(response => {
         this.$message.success('电子签章保存成功');
